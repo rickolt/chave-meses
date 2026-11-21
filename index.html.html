@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Método da Chave dos Meses — Treino Mental</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* Ajustes finos para animações rápidas e prevenção de seleção acidental */
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .key-btn {
+      transition: transform 0.08s ease, background-color 0.12s ease, border-color 0.12s ease;
+    }
+    .key-btn:active {
+      transform: scale(0.96);
+    }
+    @keyframes flashSuccess {
+      0% { background-color: rgba(16, 185, 129, 0.22); border-color: rgba(16, 185, 129, 0.6); }
+      100% { background-color: rgba(24, 24, 27, 0.85); border-color: rgba(39, 39, 42, 1); }
+    }
+    .animate-success {
+      animation: flashSuccess 0.28s ease-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500/30 selection:text-emerald-200">
+
+  <!-- Barra Superior: Controlos e Telemetria -->
+  <header class="w-full border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-sm sticky top-0 z-20">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Seletor de Intervalo e Formato -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="relative">
+          <select id="rangeSelect" aria-label="Intervalo de anos"
+            class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs sm:text-sm rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer">
+            <option value="2026-2027">2026 – 2027</option>
+            <option value="2020-2030">2020 – 2030</option>
+            <option value="2000-2099">Século XXI (2000–2099)</option>
+            <option value="1900-2099">Séculos XX–XXI (1900–2099)</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+
+        <!-- Inputs Personalizados (ocultos por defeito) -->
+        <div id="customRangeBox" class="hidden items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1">
+          <input id="customStartYear" type="number" min="1583" max="9999" value="2020" aria-label="Ano inicial"
+            class="w-16 bg-transparent font-mono text-xs sm:text-sm text-center text-zinc-100 focus:outline-none" />
+          <span class="text-zinc-500 text-xs">–</span>
+          <input id="customEndYear" type="number" min="1583" max="9999" value="2030" aria-label="Ano final"
+            class="w-16 bg-transparent font-mono text-xs sm:text-sm text-center text-zinc-100 focus:outline-none" />
+        </div>
+
+        <!-- Toggle Formato da Data -->
+        <button id="formatToggleBtn" type="button" title="Alternar formato da data"
+          class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs sm:text-sm rounded-lg px-3 py-2 font-medium transition-colors">
+          Extenso
+        </button>
+
+        <!-- Toggle Tabela de Referência -->
+        <button id="refToggleBtn" type="button" aria-expanded="false"
+          class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs sm:text-sm rounded-lg px-3 py-2 font-medium transition-colors flex items-center gap-1.5">
+          <span>Tabela</span>
+          <svg id="refChevron" class="w-3.5 h-3.5 text-zinc-400 transition-transform duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Estatísticas Compactas + Reset -->
+      <div class="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+        <div class="flex items-center gap-1.5" title="Precisão">
+          <span class="text-zinc-500">Precisão</span>
+          <span id="statAccuracy" class="font-mono font-semibold text-zinc-200">—</span>
+        </div>
+        <div class="flex items-center gap-1.5" title="Tempo médio nas respostas certas">
+          <span class="text-zinc-500">Média</span>
+          <span id="statAvgTime" class="font-mono font-semibold text-zinc-200">—</span>
+        </div>
+        <div class="flex items-center gap-1.5" title="Sequência atual de acertos">
+          <span class="text-zinc-500">Série</span>
+          <span id="statStreak" class="font-mono font-semibold text-emerald-400">0</span>
+        </div>
+        <button id="resetStatsBtn" type="button" title="Reiniciar estatísticas"
+          class="p-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Painel Colapsável: Tabela de Referência (Fechada por defeito) -->
+    <div id="referencePanel" class="hidden border-t border-zinc-800/80 bg-zinc-900/70">
+      <div class="max-w-4xl mx-auto px-4 py-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        <!-- Dias da Semana -->
+        <div class="bg-zinc-950/80 border border-zinc-800/80 rounded-lg p-2.5">
+          <div class="text-zinc-400 font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Dias da Semana</div>
+          <div class="grid grid-cols-4 gap-1 font-mono text-zinc-300">
+            <div><span class="text-emerald-400 font-bold">0</span> Sáb</div>
+            <div><span class="text-emerald-400 font-bold">1</span> Dom</div>
+            <div><span class="text-emerald-400 font-bold">2</span> Seg</div>
+            <div><span class="text-emerald-400 font-bold">3</span> Ter</div>
+            <div><span class="text-emerald-400 font-bold">4</span> Qua</div>
+            <div><span class="text-emerald-400 font-bold">5</span> Qui</div>
+            <div><span class="text-emerald-400 font-bold">6</span> Sex</div>
+          </div>
+        </div>
+
+        <!-- Chaves dos Meses -->
+        <div class="bg-zinc-950/80 border border-zinc-800/80 rounded-lg p-2.5">
+          <div class="text-zinc-400 font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Chaves dos Meses (144 025 036 146)</div>
+          <div class="grid grid-cols-3 gap-x-2 gap-y-1 font-mono text-zinc-300">
+            <div>Jan: <span class="text-emerald-400 font-bold">1</span> <span class="text-amber-400 text-[10px]">(0*)</span></div>
+            <div>Fev: <span class="text-emerald-400 font-bold">4</span> <span class="text-amber-400 text-[10px]">(3*)</span></div>
+            <div>Mar: <span class="text-emerald-400 font-bold">4</span></div>
+            <div>Abr: <span class="text-emerald-400 font-bold">0</span></div>
+            <div>Mai: <span class="text-emerald-400 font-bold">2</span></div>
+            <div>Jun: <span class="text-emerald-400 font-bold">5</span></div>
+            <div>Jul: <span class="text-emerald-400 font-bold">0</span></div>
+            <div>Ago: <span class="text-emerald-400 font-bold">3</span></div>
+            <div>Set: <span class="text-emerald-400 font-bold">6</span></div>
+            <div>Out: <span class="text-emerald-400 font-bold">1</span></div>
+            <div>Nov: <span class="text-emerald-400 font-bold">4</span></div>
+            <div>Dez: <span class="text-emerald-400 font-bold">6</span></div>
+          </div>
+          <div class="text-[10px] text-amber-400/90 mt-1">*Ano bissexto</div>
+        </div>
+
+        <!-- Códigos de Anos e Séculos -->
+        <div class="bg-zinc-950/80 border border-zinc-800/80 rounded-lg p-2.5">
+          <div class="text-zinc-400 font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Códigos de Anos / Séculos</div>
+          <div class="grid grid-cols-3 gap-1 font-mono text-zinc-300 mb-1.5">
+            <div>2024: <span class="text-emerald-400 font-bold">1</span></div>
+            <div>2025: <span class="text-emerald-400 font-bold">2</span></div>
+            <div>2026: <span class="text-emerald-400 font-bold">3</span></div>
+            <div>2027: <span class="text-emerald-400 font-bold">4</span></div>
+            <div>2028: <span class="text-emerald-400 font-bold">6</span></div>
+            <div>2029: <span class="text-emerald-400 font-bold">0</span></div>
+          </div>
+          <div class="text-[11px] font-mono text-zinc-400 border-t border-zinc-800 pt-1">
+            Séc: 1700=<span class="text-zinc-200">4</span> · 1800=<span class="text-zinc-200">2</span> · 1900=<span class="text-zinc-200">0</span> · 2000=<span class="text-zinc-200">6</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Área Central: Estímulo Principal e Feedback -->
+  <main class="flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-4xl w-full mx-auto">
+    
+    <!-- Cartão da Data -->
+    <div id="promptCard" class="w-full max-w-2xl bg-zinc-900/85 border border-zinc-800 rounded-2xl p-6 sm:p-10 text-center shadow-2xl transition-colors">
+      
+      <!-- Cronómetro Discreto -->
+      <div class="flex items-center justify-center gap-2 mb-3">
+        <span id="liveTimer" class="font-mono text-sm sm:text-base text-zinc-400 tracking-wider">0.00s</span>
+      </div>
+
+      <!-- Data em Destaque -->
+      <h1 id="dateDisplay" class="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-zinc-50 my-2 select-none">
+        21 de Novembro de 2026
+      </h1>
+
+      <!-- Feedback de Erro / Decomposição Matemática -->
+      <div id="feedbackArea" class="min-h-[4.5rem] mt-5 flex flex-col items-center justify-center">
+        <p id="idleHint" class="text-xs sm:text-sm text-zinc-500">
+          Prime <span class="font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">0</span> a <span class="font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">6</span> no teclado ou toca num botão abaixo
+        </p>
+
+        <!-- Painel de Erro (visível apenas quando erra) -->
+        <div id="errorBox" class="hidden w-full bg-red-950/40 border border-red-500/40 rounded-xl px-4 py-3 text-center">
+          <div id="errorFormula" class="font-mono text-xs sm:text-sm text-red-200 font-medium"></div>
+          <div class="mt-2.5 flex items-center justify-center">
+            <button id="nextBtn" type="button"
+              class="bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs sm:text-sm px-4 py-1.5 rounded-lg transition-colors inline-flex items-center gap-2">
+              <span>Próxima</span>
+              <span class="font-mono text-[11px] text-zinc-600 bg-zinc-200 px-1.5 py-0.5 rounded">Espaço / Enter</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Histórico Compacto das Últimas 8 Tentativas -->
+    <div id="historyContainer" class="w-full max-w-2xl mt-5 hidden">
+      <div class="flex items-center justify-between text-[11px] text-zinc-500 uppercase tracking-wider mb-2 px-1">
+        <span>Últimas tentativas</span>
+        <span id="historyCountLabel"></span>
+      </div>
+      <div id="historyList" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+    </div>
+  </main>
+
+  <!-- Barra Inferior: 7 Botões de Resposta (0 a 6) -->
+  <footer class="w-full border-t border-zinc-800/80 bg-zinc-950/95 py-4 px-3 sm:px-6">
+    <div class="max-w-4xl mx-auto">
+      <div id="keypadGrid" class="grid grid-cols-7 gap-1.5 sm:gap-3">
+        <!-- Gerado via JS para manter consistência total -->
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /**
+     * Regras Matemáticas Exatas do Sistema do Utilizador:
+     * - Dias da semana: 0=Sáb, 1=Dom, 2=Seg, 3=Ter, 4=Qua, 5=Qui, 6=Sex
+     * - Chaves dos meses (1-12): [1, 4, 4, 0, 2, 5, 0, 3, 6, 1, 4, 6]
+     *   - Janeiro em ano bissexto = 0
+     *   - Fevereiro em ano bissexto = 3
+     * - Código do ano: (ano % 100 + Math.floor((ano % 100) / 4) + ajusteSeculo) % 7
+     *   - ajusteSeculo: séc 2000 = 6, séc 1900 = 0, séc 1800 = 2, séc 1700 = 4 (ciclo de 400 anos: [6, 4, 2, 0])
+     * - Resultado final: (Dia + Chave_do_Mês + Código_do_Ano) % 7
+     */
+
+    const DAYS = [
+      { code: 0, short: 'Sáb', full: 'Sábado' },
+      { code: 1, short: 'Dom', full: 'Domingo' },
+      { code: 2, short: 'Seg', full: 'Segunda' },
+      { code: 3, short: 'Ter', full: 'Terça' },
+      { code: 4, short: 'Qua', full: 'Quarta' },
+      { code: 5, short: 'Qui', full: 'Quinta' },
+      { code: 6, short: 'Sex', full: 'Sexta' },
+    ];
+
+    const MONTHS = [
+      { index: 1, name: 'Janeiro', short: 'Jan', key: 1, leapKey: 0 },
+      { index: 2, name: 'Fevereiro', short: 'Fev', key: 4, leapKey: 3 },
+      { index: 3, name: 'Março', short: 'Mar', key: 4, leapKey: 4 },
+      { index: 4, name: 'Abril', short: 'Abr', key: 0, leapKey: 0 },
+      { index: 5, name: 'Maio', short: 'Mai', key: 2, leapKey: 2 },
+      { index: 6, name: 'Junho', short: 'Jun', key: 5, leapKey: 5 },
+      { index: 7, name: 'Julho', short: 'Jul', key: 0, leapKey: 0 },
+      { index: 8, name: 'Agosto', short: 'Ago', key: 3, leapKey: 3 },
+      { index: 9, name: 'Setembro', short: 'Set', key: 6, leapKey: 6 },
+      { index: 10, name: 'Outubro', short: 'Out', key: 1, leapKey: 1 },
+      { index: 11, name: 'Novembro', short: 'Nov', key: 4, leapKey: 4 },
+      { index: 12, name: 'Dezembro', short: 'Dez', key: 6, leapKey: 6 },
+    ];
+
+    // Estado da Aplicação
+    const state = {
+      currentDate: null, // { day, month, year, monthKey, yearCode, answer, isLeap }
+      dateFormat: 'extenso', // 'extenso' | 'numerico'
+      rangePreset: '2026-2027',
+      customStart: 2020,
+      customEnd: 2030,
+      startTime: 0,
+      timerRaf: null,
+      lockedError: false, // Bloqueia inputs numéricos enquanto exibe a correção do erro
+      stats: {
+        total: 0,
+        correct: 0,
+        streak: 0,
+        correctTimesMs: [],
+      },
+      history: [], // Últimas 8 tentativas
+    };
+
+    // Referências DOM
+    const el = {
+      rangeSelect: document.getElementById('rangeSelect'),
+      customRangeBox: document.getElementById('customRangeBox'),
+      customStartYear: document.getElementById('customStartYear'),
+      customEndYear: document.getElementById('customEndYear'),
+      formatToggleBtn: document.getElementById('formatToggleBtn'),
+      refToggleBtn: document.getElementById('refToggleBtn'),
+      refChevron: document.getElementById('refChevron'),
+      referencePanel: document.getElementById('referencePanel'),
+      statAccuracy: document.getElementById('statAccuracy'),
+      statAvgTime: document.getElementById('statAvgTime'),
+      statStreak: document.getElementById('statStreak'),
+      resetStatsBtn: document.getElementById('resetStatsBtn'),
+      promptCard: document.getElementById('promptCard'),
+      liveTimer: document.getElementById('liveTimer'),
+      dateDisplay: document.getElementById('dateDisplay'),
+      idleHint: document.getElementById('idleHint'),
+      errorBox: document.getElementById('errorBox'),
+      errorFormula: document.getElementById('errorFormula'),
+      nextBtn: document.getElementById('nextBtn'),
+      keypadGrid: document.getElementById('keypadGrid'),
+      historyContainer: document.getElementById('historyContainer'),
+      historyList: document.getElementById('historyList'),
+      historyCountLabel: document.getElementById('historyCountLabel'),
+    };
+
+    // Utilitários Matemáticos
+    function isLeapYear(year) {
+      return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+    }
+
+    function getDaysInMonth(month, year) {
+      if (month === 2) return isLeapYear(year) ? 29 : 28;
+      if ([4, 6, 9, 11].includes(month)) return 30;
+      return 31;
+    }
+
+    function getYearCode(year) {
+      const centuryIndex = Math.floor(year / 100) % 4;
+      const centuryAdjust = [6, 4, 2, 0][centuryIndex];
+      const yy = year % 100;
+      return (yy + Math.floor(yy / 4) + centuryAdjust) % 7;
+    }
+
+    function calculateDateDetails(day, month, year) {
+      const leap = isLeapYear(year);
+      const monthObj = MONTHS[month - 1];
+      const monthKey = leap ? monthObj.leapKey : monthObj.key;
+      const yearCode = getYearCode(year);
+      const sum = day + monthKey + yearCode;
+      const answer = sum % 7;
+
+      return {
+        day,
+        month,
+        year,
+        isLeap: leap,
+        monthObj,
+        monthKey,
+        yearCode,
+        sum,
+        answer,
+      };
+    }
+
+    // Geração de Data Aleatória dentro do intervalo configurado
+    function getActiveYearBounds() {
+      if (state.rangePreset === 'custom') {
+        let s = parseInt(el.customStartYear.value, 10) || 2000;
+        let e = parseInt(el.customEndYear.value, 10) || 2099;
+        s = Math.max(1583, Math.min(9999, s));
+        e = Math.max(1583, Math.min(9999, e));
+        return s <= e ? [s, e] : [e, s];
+      }
+      const [start, end] = state.rangePreset.split('-').map(Number);
+      return [start, end];
+    }
+
+    function generateRandomDate() {
+      const [minYear, maxYear] = getActiveYearBounds();
+      let candidate;
+      let attempts = 0;
+
+      // Evita repetir exatamente a mesma data consecutivamente
+      do {
+        const year = Math.floor(Math.random() * (maxYear - minYear + 1)) + minYear;
+        const month = Math.floor(Math.random() * 12) + 1;
+        const maxDay = getDaysInMonth(month, year);
+        const day = Math.floor(Math.random() * maxDay) + 1;
+        candidate = calculateDateDetails(day, month, year);
+        attempts++;
+      } while (
+        state.currentDate &&
+        candidate.day === state.currentDate.day &&
+        candidate.month === state.currentDate.month &&
+        candidate.year === state.currentDate.year &&
+        attempts < 10
+      );
+
+      return candidate;
+    }
+
+    // Formatação da Data
+    function formatDateString(d, format = state.dateFormat) {
+      if (format === 'numerico') {
+        const dd = String(d.day).padStart(2, '0');
+        const mm = String(d.month).padStart(2, '0');
+        return `${dd}/${mm}/${d.year}`;
+      }
+      return `${d.day} de ${d.monthObj.name} de ${d.year}`;
+    }
+
+    function formatShortDate(d) {
+      const dd = String(d.day).padStart(2, '0');
+      const mm = String(d.month).padStart(2, '0');
+      return `${dd}/${mm}/${d.year}`;
+    }
+
+    // Cronómetro
+    function startTimer() {
+      stopTimer();
+      state.startTime = performance.now();
+      function tick(now) {
+        const elapsedSec = (now - state.startTime) / 1000;
+        el.liveTimer.textContent = `${elapsedSec.toFixed(2)}s`;
+        state.timerRaf = requestAnimationFrame(tick);
+      }
+      state.timerRaf = requestAnimationFrame(tick);
+    }
+
+    function stopTimer() {
+      if (state.timerRaf) {
+        cancelAnimationFrame(state.timerRaf);
+        state.timerRaf = null;
+      }
+    }
+
+    // Renderização dos 7 Botões Inferiores
+    function renderKeypad() {
+      el.keypadGrid.innerHTML = DAYS.map((d) => `
+        <button type="button" data-code="${d.code}"
+          class="key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 focus:outline-none select-none cursor-pointer">
+          <span class="font-mono text-lg sm:text-2xl font-bold text-zinc-100 leading-none mb-1">${d.code}</span>
+          <span class="text-[11px] sm:text-xs font-medium text-zinc-400 uppercase tracking-wide">${d.short}</span>
+        </button>
+      `).join('');
+
+      el.keypadGrid.querySelectorAll('button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const code = Number(btn.dataset.code);
+          handleAnswer(code);
+        });
+      });
+    }
+
+    function resetKeypadStyles() {
+      el.keypadGrid.querySelectorAll('button').forEach((btn) => {
+        btn.className = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 focus:outline-none select-none cursor-pointer';
+        btn.querySelector('span:first-child').className = 'font-mono text-lg sm:text-2xl font-bold text-zinc-100 leading-none mb-1';
+        btn.querySelector('span:last-child').className = 'text-[11px] sm:text-xs font-medium text-zinc-400 uppercase tracking-wide';
+      });
+    }
+
+    function highlightKeypadError(userChoice, correctAnswer) {
+      el.keypadGrid.querySelectorAll('button').forEach((btn) => {
+        const code = Number(btn.dataset.code);
+        if (code === correctAnswer) {
+          btn.className = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-emerald-950/90 border-2 border-emerald-500 shadow-lg shadow-emerald-950/50 select-none';
+          btn.querySelector('span:first-child').className = 'font-mono text-lg sm:text-2xl font-bold text-emerald-300 leading-none mb-1';
+          btn.querySelector('span:last-child').className = 'text-[11px] sm:text-xs font-semibold text-emerald-400 uppercase tracking-wide';
+        } else if (code === userChoice) {
+          btn.className = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-red-950/80 border-2 border-red-500/80 select-none';
+          btn.querySelector('span:first-child').className = 'font-mono text-lg sm:text-2xl font-bold text-red-300 leading-none mb-1';
+          btn.querySelector('span:last-child').className = 'text-[11px] sm:text-xs font-semibold text-red-400 uppercase tracking-wide';
+        } else {
+          btn.className = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-zinc-900/40 border border-zinc-800/50 opacity-45 select-none';
+        }
+      });
+    }
+
+    // Avançar para Nova Data
+    function loadNextDate() {
+      state.lockedError = false;
+      state.currentDate = generateRandomDate();
+      el.dateDisplay.textContent = formatDateString(state.currentDate);
+      el.errorBox.classList.add('hidden');
+      el.idleHint.classList.remove('hidden');
+      resetKeypadStyles();
+      startTimer();
+    }
+
+    // Construção da Explicação Matemática
+    function buildBreakdownText(d) {
+      const monthLabel = d.isLeap && (d.month === 1 || d.month === 2)
+        ? `${d.monthObj.short} bissexto`
+        : d.monthObj.short;
+      const dayName = DAYS[d.answer].full;
+      return `${d.day} (dia) + ${d.monthKey} (${monthLabel}) + ${d.yearCode} (${d.year}) = ${d.sum} → ${d.sum} mod 7 = ${d.answer} (${dayName})`;
+    }
+
+    // Processar Resposta do Utilizador
+    function handleAnswer(selectedCode) {
+      if (state.lockedError || !state.currentDate) return;
+
+      const elapsedMs = performance.now() - state.startTime;
+      const d = state.currentDate;
+      const isCorrect = selectedCode === d.answer;
+
+      state.stats.total += 1;
+
+      if (isCorrect) {
+        state.stats.correct += 1;
+        state.stats.streak += 1;
+        state.stats.correctTimesMs.push(elapsedMs);
+
+        // Registar no histórico
+        addHistoryItem(d, elapsedMs, true, selectedCode);
+        updateStatsUI();
+
+        // Feedback visual verde rápido (250ms) e avanço imediato
+        el.promptCard.classList.remove('animate-success');
+        void el.promptCard.offsetWidth; // Reflow para reiniciar animação
+        el.promptCard.classList.add('animate-success');
+
+        const btn = el.keypadGrid.querySelector(`button[data-code="${selectedCode}"]`);
+        if (btn) {
+          btn.classList.add('!bg-emerald-600/30', '!border-emerald-500');
+        }
+
+        stopTimer();
+        setTimeout(() => {
+          loadNextDate();
+        }, 250);
+      } else {
+        stopTimer();
+        state.lockedError = true;
+        state.stats.streak = 0;
+
+        addHistoryItem(d, elapsedMs, false, selectedCode);
+        updateStatsUI();
+
+        highlightKeypadError(selectedCode, d.answer);
+        el.idleHint.classList.add('hidden');
+        el.errorFormula.textContent = buildBreakdownText(d);
+        el.errorBox.classList.remove('hidden');
+      }
+    }
+
+    // Atualizar Estatísticas
+    function updateStatsUI() {
+      const { total, correct, streak, correctTimesMs } = state.stats;
+      if (total === 0) {
+        el.statAccuracy.textContent = '—';
+        el.statAvgTime.textContent = '—';
+        el.statStreak.textContent = '0';
+        return;
+      }
+
+      const acc = Math.round((correct / total) * 100);
+      el.statAccuracy.textContent = `${acc}%`;
+      el.statStreak.textContent = String(streak);
+
+      if (correctTimesMs.length > 0) {
+        const avgMs = correctTimesMs.reduce((a, b) => a + b, 0) / correctTimesMs.length;
+        el.statAvgTime.textContent = `${(avgMs / 1000).toFixed(2)}s`;
+      } else {
+        el.statAvgTime.textContent = '—';
+      }
+    }
+
+    // Histórico das Últimas 8 Tentativas
+    function addHistoryItem(dateDetails, elapsedMs, isCorrect, userChoice) {
+      state.history.unshift({
+        dateDetails,
+        elapsedMs,
+        isCorrect,
+        userChoice,
+      });
+      if (state.history.length > 8) {
+        state.history.pop();
+      }
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (state.history.length === 0) {
+        el.historyContainer.classList.add('hidden');
+        return;
+      }
+
+      el.historyContainer.classList.remove('hidden');
+      el.historyCountLabel.textContent = `${state.stats.correct}/${state.stats.total} certas`;
+
+      el.historyList.innerHTML = state.history.map((item) => {
+        const d = item.dateDetails;
+        const sec = (item.elapsedMs / 1000).toFixed(2);
+        const formula = buildBreakdownText(d);
+        const borderClass = item.isCorrect
+          ? 'border-zinc-800/90 bg-zinc-900/60'
+          : 'border-red-500/40 bg-red-950/25';
+        const badgeClass = item.isCorrect
+          ? 'text-emerald-400'
+          : 'text-red-400';
+        const statusSymbol = item.isCorrect
+          ? `✓ ${DAYS[d.answer].short}`
+          : `✗ ${DAYS[item.userChoice].short} (${DAYS[d.answer].short})`;
+
+        return `
+          <div title="${formula}"
+            class="rounded-lg border ${borderClass} px-2.5 py-2 flex flex-col justify-between text-xs cursor-help transition-colors hover:border-zinc-700">
+            <div class="flex items-center justify-between gap-1 font-mono">
+              <span class="text-zinc-300 font-medium">${formatShortDate(d)}</span>
+              <span class="text-zinc-500 text-[11px]">${sec}s</span>
+            </div>
+            <div class="mt-1 font-mono text-[11px] font-semibold ${badgeClass}">
+              ${statusSymbol}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Eventos de Teclado (Zero Atrito)
+    document.addEventListener('keydown', (e) => {
+      // Ignora atalhos se o utilizador estiver a editar os inputs de ano personalizado
+      if (document.activeElement === el.customStartYear || document.activeElement === el.customEndYear) {
+        if (e.key === 'Enter') {
+          document.activeElement.blur();
+          loadNextDate();
+        }
+        return;
+      }
+
+      if (state.lockedError) {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          loadNextDate();
+        }
+        return;
+      }
+
+      // Aceita teclas 0 a 6 tanto da fila superior como do Numpad
+      if (/^[0-6]$/.test(e.key)) {
+        e.preventDefault();
+        handleAnswer(Number(e.key));
+      }
+    });
+
+    // Eventos dos Controlos Superiores
+    el.rangeSelect.addEventListener('change', (e) => {
+      state.rangePreset = e.target.value;
+      if (state.rangePreset === 'custom') {
+        el.customRangeBox.classList.remove('hidden');
+        el.customRangeBox.classList.add('flex');
+      } else {
+        el.customRangeBox.classList.add('hidden');
+        el.customRangeBox.classList.remove('flex');
+      }
+      loadNextDate();
+    });
+
+    el.customStartYear.addEventListener('change', () => loadNextDate());
+    el.customEndYear.addEventListener('change', () => loadNextDate());
+
+    el.formatToggleBtn.addEventListener('click', () => {
+      state.dateFormat = state.dateFormat === 'extenso' ? 'numerico' : 'extenso';
+      el.formatToggleBtn.textContent = state.dateFormat === 'extenso' ? 'Extenso' : 'DD/MM/AAAA';
+      if (state.currentDate) {
+        el.dateDisplay.textContent = formatDateString(state.currentDate);
+      }
+    });
+
+    el.refToggleBtn.addEventListener('click', () => {
+      const isHidden = el.referencePanel.classList.contains('hidden');
+      if (isHidden) {
+        el.referencePanel.classList.remove('hidden');
+        el.refToggleBtn.setAttribute('aria-expanded', 'true');
+        el.refChevron.classList.add('rotate-180');
+      } else {
+        el.referencePanel.classList.add('hidden');
+        el.refToggleBtn.setAttribute('aria-expanded', 'false');
+        el.refChevron.classList.remove('rotate-180');
+      }
+    });
+
+    el.nextBtn.addEventListener('click', () => {
+      loadNextDate();
+    });
+
+    el.resetStatsBtn.addEventListener('click', () => {
+      state.stats = {
+        total: 0,
+        correct: 0,
+        streak: 0,
+        correctTimesMs: [],
+      };
+      state.history = [];
+      updateStatsUI();
+      renderHistory();
+      loadNextDate();
+    });
+
+    // Inicialização
+    window.addEventListener('DOMContentLoaded', () => {
+      renderKeypad();
+      updateStatsUI();
+      loadNextDate();
+    });
+  </script>
+</body>
+</html>
