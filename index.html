@@ -22,14 +22,13 @@
     };
   </script>
   <style>
-    /* Ajustes finos para animações rápidas e prevenção de seleção acidental */
     body {
       background-color: #09090b;
       color: #f4f4f5;
       -webkit-tap-highlight-color: transparent;
     }
     .key-btn {
-      transition: transform 0.08s ease, background-color 0.12s ease, border-color 0.12s ease;
+      transition: transform 0.08s ease, background-color 0.12s ease, border-color 0.12s ease, opacity 0.15s ease;
     }
     .key-btn:active {
       transform: scale(0.96);
@@ -41,6 +40,16 @@
     .animate-success {
       animation: flashSuccess 0.28s ease-out;
     }
+    @keyframes popIn {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: popIn 0.25s ease-out;
+    }
+    kbd {
+      font-family: 'JetBrains Mono', monospace;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500/30 selection:text-emerald-200">
@@ -48,21 +57,17 @@
   <!-- Barra Superior: Controlos e Telemetria -->
   <header class="w-full border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-sm sticky top-0 z-20">
     <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      
-      <!-- Seletor de Intervalo e Formato -->
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="relative">
-          <select id="rangeSelect" aria-label="Intervalo de anos"
-            class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs sm:text-sm rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer">
-            <option value="2026-2027">2026 – 2027</option>
-            <option value="2020-2030">2020 – 2030</option>
-            <option value="2000-2099">Século XXI (2000–2099)</option>
-            <option value="1900-2099">Séculos XX–XXI (1900–2099)</option>
-            <option value="custom">Personalizado</option>
-          </select>
-        </div>
 
-        <!-- Inputs Personalizados (ocultos por defeito) -->
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="rangeSelect" aria-label="Intervalo de anos"
+          class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs sm:text-sm rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer">
+          <option value="2026-2027">2026 – 2027</option>
+          <option value="2020-2030">2020 – 2030</option>
+          <option value="2000-2099">Século XXI (2000–2099)</option>
+          <option value="1900-2099">Séculos XX–XXI (1900–2099)</option>
+          <option value="custom">Personalizado</option>
+        </select>
+
         <div id="customRangeBox" class="hidden items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1">
           <input id="customStartYear" type="number" min="1583" max="9999" value="2020" aria-label="Ano inicial"
             class="w-16 bg-transparent font-mono text-xs sm:text-sm text-center text-zinc-100 focus:outline-none" />
@@ -71,13 +76,11 @@
             class="w-16 bg-transparent font-mono text-xs sm:text-sm text-center text-zinc-100 focus:outline-none" />
         </div>
 
-        <!-- Toggle Formato da Data -->
         <button id="formatToggleBtn" type="button" title="Alternar formato da data"
           class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs sm:text-sm rounded-lg px-3 py-2 font-medium transition-colors">
           Extenso
         </button>
 
-        <!-- Toggle Tabela de Referência -->
         <button id="refToggleBtn" type="button" aria-expanded="false"
           class="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs sm:text-sm rounded-lg px-3 py-2 font-medium transition-colors flex items-center gap-1.5">
           <span>Tabela</span>
@@ -87,33 +90,32 @@
         </button>
       </div>
 
-      <!-- Estatísticas Compactas + Reset -->
       <div class="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
-        <div class="flex items-center gap-1.5" title="Precisão">
+        <div class="flex items-center gap-1.5" title="Precisão na sessão atual">
           <span class="text-zinc-500">Precisão</span>
           <span id="statAccuracy" class="font-mono font-semibold text-zinc-200">—</span>
         </div>
-        <div class="flex items-center gap-1.5" title="Tempo médio nas respostas certas">
-          <span class="text-zinc-500">Média</span>
+        <div class="flex items-center gap-1.5" title="Mediana do tempo nas respostas certas (sessão atual)">
+          <span class="text-zinc-500">Mediana</span>
           <span id="statAvgTime" class="font-mono font-semibold text-zinc-200">—</span>
         </div>
         <div class="flex items-center gap-1.5" title="Sequência atual de acertos">
           <span class="text-zinc-500">Série</span>
           <span id="statStreak" class="font-mono font-semibold text-emerald-400">0</span>
         </div>
-        <button id="resetStatsBtn" type="button" title="Reiniciar estatísticas"
-          class="p-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-colors">
+        <button id="progressBtn" type="button" title="Progresso guardado"
+          class="p-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-colors flex items-center gap-1.5">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19h16M7 16V10m5 6V6m5 10v-4" />
           </svg>
+          <span class="hidden sm:inline">Progresso</span>
         </button>
       </div>
     </div>
 
-    <!-- Painel Colapsável: Tabela de Referência (Fechada por defeito) -->
+    <!-- Painel Colapsável: Tabela de Referência -->
     <div id="referencePanel" class="hidden border-t border-zinc-800/80 bg-zinc-900/70">
       <div class="max-w-4xl mx-auto px-4 py-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-        <!-- Dias da Semana -->
         <div class="bg-zinc-950/80 border border-zinc-800/80 rounded-lg p-2.5">
           <div class="text-zinc-400 font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Dias da Semana</div>
           <div class="grid grid-cols-4 gap-1 font-mono text-zinc-300">
@@ -127,7 +129,6 @@
           </div>
         </div>
 
-        <!-- Chaves dos Meses -->
         <div class="bg-zinc-950/80 border border-zinc-800/80 rounded-lg p-2.5">
           <div class="text-zinc-400 font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Chaves dos Meses (144 025 036 146)</div>
           <div class="grid grid-cols-3 gap-x-2 gap-y-1 font-mono text-zinc-300">
@@ -147,7 +148,6 @@
           <div class="text-[10px] text-amber-400/90 mt-1">*Ano bissexto</div>
         </div>
 
-        <!-- Códigos de Anos e Séculos -->
         <div class="bg-zinc-950/80 border border-zinc-800/80 rounded-lg p-2.5">
           <div class="text-zinc-400 font-semibold mb-1.5 uppercase tracking-wider text-[10px]">Códigos de Anos / Séculos</div>
           <div class="grid grid-cols-3 gap-1 font-mono text-zinc-300 mb-1.5">
@@ -161,48 +161,117 @@
           <div class="text-[11px] font-mono text-zinc-400 border-t border-zinc-800 pt-1">
             Séc: 1700=<span class="text-zinc-200">4</span> · 1800=<span class="text-zinc-200">2</span> · 1900=<span class="text-zinc-200">0</span> · 2000=<span class="text-zinc-200">6</span>
           </div>
+          <div class="text-[10px] font-mono text-zinc-500 mt-1">Código = (AA + AA÷4 + séc.) mod 7</div>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Área Central: Estímulo Principal e Feedback -->
+  <!-- Área Central -->
   <main class="flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-4xl w-full mx-auto">
-    
-    <!-- Cartão da Data -->
+
     <div id="promptCard" class="w-full max-w-2xl bg-zinc-900/85 border border-zinc-800 rounded-2xl p-6 sm:p-10 text-center shadow-2xl transition-colors">
-      
-      <!-- Cronómetro Discreto -->
-      <div class="flex items-center justify-center gap-2 mb-3">
-        <span id="liveTimer" class="font-mono text-sm sm:text-base text-zinc-400 tracking-wider">0.00s</span>
+
+      <!-- Barra do cartão (só durante a sessão) -->
+      <div id="cardTopBar" class="hidden grid grid-cols-3 items-center mb-3 text-xs sm:text-sm">
+        <span id="sessionLabel" class="justify-self-start font-mono text-zinc-500" aria-live="polite"></span>
+        <span id="liveTimer" class="justify-self-center font-mono text-zinc-400 tracking-wider">0.00s</span>
+        <button id="pauseBtn" type="button" title="Pausa (Esc)"
+          class="justify-self-end inline-flex items-center gap-1.5 text-zinc-500 hover:text-zinc-200 px-2 py-1 rounded-md hover:bg-zinc-800/80 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M7 5h3v14H7zM14 5h3v14h-3z" /></svg>
+          <span class="hidden sm:inline">Pausa</span>
+          <kbd class="hidden sm:inline text-[10px] bg-zinc-800 px-1 rounded">Esc</kbd>
+        </button>
       </div>
 
-      <!-- Data em Destaque -->
-      <h1 id="dateDisplay" class="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-zinc-50 my-2 select-none">
-        21 de Novembro de 2026
-      </h1>
+      <!-- Ecrã Inicial -->
+      <section id="screenStart">
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-50">Pronto para treinar?</h1>
+        <p class="text-sm text-zinc-400 mt-2">Escolhe o modo e começa quando quiseres.</p>
 
-      <!-- Feedback de Erro / Decomposição Matemática -->
-      <div id="feedbackArea" class="min-h-[4.5rem] mt-5 flex flex-col items-center justify-center">
-        <p id="idleHint" class="text-xs sm:text-sm text-zinc-500">
-          Prime <span class="font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">0</span> a <span class="font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">6</span> no teclado ou toca num botão abaixo
-        </p>
+        <div id="modeGroup" role="radiogroup" aria-label="Modo de sessão" class="mt-6 grid grid-cols-3 gap-2 sm:gap-3"></div>
 
-        <!-- Painel de Erro (visível apenas quando erra) -->
-        <div id="errorBox" class="hidden w-full bg-red-950/40 border border-red-500/40 rounded-xl px-4 py-3 text-center">
-          <div id="errorFormula" class="font-mono text-xs sm:text-sm text-red-200 font-medium"></div>
-          <div class="mt-2.5 flex items-center justify-center">
-            <button id="nextBtn" type="button"
-              class="bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs sm:text-sm px-4 py-1.5 rounded-lg transition-colors inline-flex items-center gap-2">
-              <span>Próxima</span>
-              <span class="font-mono text-[11px] text-zinc-600 bg-zinc-200 px-1.5 py-0.5 rounded">Espaço / Enter</span>
-            </button>
+        <label class="mt-5 inline-flex items-center gap-2 text-xs sm:text-sm text-zinc-400 cursor-pointer select-none">
+          <input id="countdownChk" type="checkbox" class="accent-emerald-500 w-4 h-4" />
+          Contagem 3-2-1 antes de começar
+        </label>
+
+        <div class="mt-6">
+          <button id="startBtn" type="button"
+            class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-sm sm:text-base px-6 py-2.5 rounded-xl transition-colors inline-flex items-center gap-2.5">
+            <span>Começar</span>
+            <kbd class="text-[11px] text-emerald-950 bg-emerald-300/70 px-1.5 py-0.5 rounded">Espaço</kbd>
+          </button>
+        </div>
+
+        <p id="startStats" class="mt-5 text-xs text-zinc-500"></p>
+      </section>
+
+      <!-- Ecrã de Jogo -->
+      <section id="screenPlay" class="hidden">
+        <div id="dateDisplay" role="heading" aria-level="1"
+          class="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-zinc-50 my-2 select-none"></div>
+
+        <div id="feedbackArea" class="min-h-[4.5rem] mt-5 flex flex-col items-center justify-center" aria-live="polite">
+          <p id="idleHint" class="text-xs sm:text-sm text-zinc-500">
+            Prime <kbd class="text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">0</kbd> a <kbd class="text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">6</kbd> no teclado ou toca num botão abaixo
+          </p>
+
+          <div id="errorBox" class="hidden w-full bg-red-950/40 border border-red-500/40 rounded-xl px-4 py-3 text-center">
+            <div id="errorFormula" class="font-mono text-xs sm:text-sm text-red-200 font-medium space-y-1"></div>
+            <div class="mt-2.5 flex items-center justify-center">
+              <button id="nextBtn" type="button"
+                class="bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs sm:text-sm px-4 py-1.5 rounded-lg transition-colors inline-flex items-center gap-2">
+                <span id="nextBtnLabel">Próxima</span>
+                <kbd class="text-[11px] text-zinc-600 bg-zinc-200 px-1.5 py-0.5 rounded">Espaço / Enter</kbd>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Ecrã de Pausa -->
+      <section id="screenPause" class="hidden py-4">
+        <h2 class="text-2xl sm:text-3xl font-bold text-zinc-50">Em pausa</h2>
+        <p class="text-sm text-zinc-400 mt-2">O cronómetro está parado e a data fica escondida.</p>
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <button id="resumeBtn" type="button"
+            class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-sm px-5 py-2 rounded-xl transition-colors inline-flex items-center gap-2">
+            <span>Continuar</span>
+            <kbd class="text-[11px] text-emerald-950 bg-emerald-300/70 px-1.5 py-0.5 rounded">Espaço</kbd>
+          </button>
+          <button id="endBtn" type="button"
+            class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-sm px-5 py-2 rounded-xl transition-colors">
+            Terminar sessão
+          </button>
+        </div>
+      </section>
+
+      <!-- Ecrã de Resumo -->
+      <section id="screenSummary" class="hidden">
+        <div id="summaryTitle" class="text-[11px] uppercase tracking-wider text-zinc-500"></div>
+        <div id="summaryHeadline" class="text-4xl sm:text-5xl font-bold text-zinc-50 mt-2 font-mono"></div>
+        <div id="summaryRecord" class="hidden mt-2 text-sm font-semibold text-emerald-400"></div>
+        <div id="summaryGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5"></div>
+        <div id="summaryErrorsWrap" class="hidden mt-5 text-left">
+          <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-1.5">Erros desta sessão</div>
+          <div id="summaryErrors" class="space-y-1.5 max-h-48 overflow-y-auto pr-1"></div>
+        </div>
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <button id="againBtn" type="button"
+            class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-sm px-5 py-2 rounded-xl transition-colors inline-flex items-center gap-2">
+            <span>Repetir</span>
+            <kbd class="text-[11px] text-emerald-950 bg-emerald-300/70 px-1.5 py-0.5 rounded">Espaço</kbd>
+          </button>
+          <button id="changeModeBtn" type="button"
+            class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-sm px-5 py-2 rounded-xl transition-colors">
+            Mudar modo
+          </button>
+        </div>
+      </section>
     </div>
 
-    <!-- Histórico Compacto das Últimas 8 Tentativas -->
+    <!-- Histórico da sessão -->
     <div id="historyContainer" class="w-full max-w-2xl mt-5 hidden">
       <div class="flex items-center justify-between text-[11px] text-zinc-500 uppercase tracking-wider mb-2 px-1">
         <span>Últimas tentativas</span>
@@ -212,25 +281,53 @@
     </div>
   </main>
 
-  <!-- Barra Inferior: 7 Botões de Resposta (0 a 6) -->
+  <!-- Barra Inferior: 7 Botões de Resposta -->
   <footer class="w-full border-t border-zinc-800/80 bg-zinc-950/95 py-4 px-3 sm:px-6">
     <div class="max-w-4xl mx-auto">
-      <div id="keypadGrid" class="grid grid-cols-7 gap-1.5 sm:gap-3">
-        <!-- Gerado via JS para manter consistência total -->
-      </div>
+      <div id="keypadGrid" class="grid grid-cols-7 gap-1.5 sm:gap-3 transition-opacity"></div>
     </div>
   </footer>
 
+  <!-- Modal de Progresso -->
+  <div id="progressModal" class="hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-labelledby="progressTitle"
+      class="w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+        <h2 id="progressTitle" class="text-base sm:text-lg font-semibold text-zinc-100">O teu progresso</h2>
+        <button id="progressCloseBtn" type="button" title="Fechar (Esc)"
+          class="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div id="progressBody" class="px-5 py-4 text-sm"></div>
+      <div class="px-5 py-4 border-t border-zinc-800 flex flex-wrap items-center gap-2">
+        <button id="exportBtn" type="button"
+          class="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg transition-colors">Exportar (JSON)</button>
+        <button id="importBtn" type="button"
+          class="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg transition-colors">Importar</button>
+        <input id="importFile" type="file" accept="application/json,.json" class="hidden" />
+        <button id="clearBtn" type="button"
+          class="ml-auto text-red-400 hover:text-red-300 hover:bg-red-950/40 text-xs sm:text-sm font-medium px-3 py-2 rounded-lg transition-colors">Apagar tudo</button>
+        <p class="w-full text-[11px] text-zinc-500 mt-1">
+          O progresso fica guardado neste browser. Usa <span class="text-zinc-400">Exportar</span> para fazer uma cópia de segurança ou passá-lo para outro dispositivo.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aviso flutuante -->
+  <div id="toast" role="status" aria-live="polite"
+    class="hidden fixed left-1/2 -translate-x-1/2 bottom-28 z-50 bg-zinc-100 text-zinc-900 text-sm font-medium px-4 py-2 rounded-lg shadow-xl"></div>
+
   <script>
     /**
-     * Regras Matemáticas Exatas do Sistema do Utilizador:
+     * Regras Matemáticas (não alterar):
      * - Dias da semana: 0=Sáb, 1=Dom, 2=Seg, 3=Ter, 4=Qua, 5=Qui, 6=Sex
-     * - Chaves dos meses (1-12): [1, 4, 4, 0, 2, 5, 0, 3, 6, 1, 4, 6]
-     *   - Janeiro em ano bissexto = 0
-     *   - Fevereiro em ano bissexto = 3
-     * - Código do ano: (ano % 100 + Math.floor((ano % 100) / 4) + ajusteSeculo) % 7
-     *   - ajusteSeculo: séc 2000 = 6, séc 1900 = 0, séc 1800 = 2, séc 1700 = 4 (ciclo de 400 anos: [6, 4, 2, 0])
-     * - Resultado final: (Dia + Chave_do_Mês + Código_do_Ano) % 7
+     * - Chaves dos meses (Jan–Dez): [1, 4, 4, 0, 2, 5, 0, 3, 6, 1, 4, 6]
+     *   (Janeiro e Fevereiro em ano bissexto: subtrair 1 → 0 e 3)
+     * - Código do ano: (AA + floor(AA / 4) + ajusteSéculo) % 7
+     *   ajusteSéculo (ciclo de 400 anos): 2000=6, 1700=4, 1800=2, 1900=0  → 2026=3, 2027=4
+     * - Resultado: (Dia + Chave do Mês + Código do Ano) % 7
      */
 
     const DAYS = [
@@ -258,53 +355,169 @@
       { index: 12, name: 'Dezembro', short: 'Dez', key: 6, leapKey: 6 },
     ];
 
-    // Estado da Aplicação
+    const MODES = {
+      livre: { label: 'Livre', desc: 'Sem limite' },
+      serie: { label: 'Série de 20', desc: '20 datas', count: 20 },
+      tempo: { label: '2 minutos', desc: 'Contra-relógio', limitMs: 120000 },
+    };
+
+    const RANGE_PRESETS = ['2026-2027', '2020-2030', '2000-2099', '1900-2099', 'custom'];
+    const MEMORIZED_YEARS = [2024, 2029]; // anos da tabela: não precisam da decomposição do código
+    const STORAGE_KEY = 'chaveDosMeses.v1';
+    const MAX_ATTEMPTS = 20000;
+    const TRANSITION_MS = 250;
+
+    // ---------- Persistência ----------
+    function defaultStore() {
+      return {
+        version: 1,
+        settings: {
+          rangePreset: '2026-2027',
+          customStart: 2020,
+          customEnd: 2030,
+          dateFormat: 'extenso',
+          refOpen: false,
+          mode: 'livre',
+          countdown: true,
+        },
+        attempts: [], // { t, d, m, y, a, u, ok, ms, mode }
+        sessions: [], // { start, end, mode, total, correct, medianMs, bestMs, bestStreak, range }
+      };
+    }
+
+    function isValidAttempt(a) {
+      return a && [a.t, a.d, a.m, a.y, a.a, a.u, a.ms].every(Number.isFinite) &&
+        typeof a.ok === 'boolean' && a.m >= 1 && a.m <= 12 && a.d >= 1 && a.d <= 31 &&
+        a.a >= 0 && a.a <= 6 && a.u >= 0 && a.u <= 6 && a.ms >= 0;
+    }
+
+    function isValidSession(s) {
+      return s && [s.start, s.total, s.correct].every(Number.isFinite) && typeof s.mode === 'string';
+    }
+
+    function cleanAttempt(a) {
+      return {
+        t: a.t, d: a.d, m: a.m, y: a.y, a: a.a, u: a.u, ok: a.ok, ms: Math.round(a.ms),
+        mode: MODES[a.mode] ? a.mode : 'livre',
+      };
+    }
+
+    function cleanSession(s) {
+      const num = (v) => (Number.isFinite(v) ? v : null);
+      return {
+        start: s.start, end: num(s.end), mode: MODES[s.mode] ? s.mode : 'livre',
+        total: s.total, correct: s.correct, medianMs: num(s.medianMs), bestMs: num(s.bestMs),
+        bestStreak: num(s.bestStreak) ?? 0, range: typeof s.range === 'string' ? s.range.slice(0, 40) : '',
+      };
+    }
+
+    function loadStore() {
+      const base = defaultStore();
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return base;
+        const p = JSON.parse(raw);
+        const settings = { ...base.settings, ...(p.settings || {}) };
+        if (!RANGE_PRESETS.includes(settings.rangePreset)) settings.rangePreset = base.settings.rangePreset;
+        if (!MODES[settings.mode]) settings.mode = base.settings.mode;
+        return {
+          version: 1,
+          settings,
+          attempts: Array.isArray(p.attempts) ? p.attempts.filter(isValidAttempt).map(cleanAttempt) : [],
+          sessions: Array.isArray(p.sessions) ? p.sessions.filter(isValidSession).map(cleanSession) : [],
+        };
+      } catch (e) {
+        return base;
+      }
+    }
+
+    const store = loadStore();
+    let storageWarned = false;
+
+    function saveStore() {
+      if (store.attempts.length > MAX_ATTEMPTS) {
+        store.attempts.splice(0, store.attempts.length - MAX_ATTEMPTS);
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+      } catch (e) {
+        if (!storageWarned) {
+          storageWarned = true;
+          showToast('Não foi possível guardar o progresso neste browser.');
+        }
+      }
+    }
+
+    // ---------- Estado ----------
     const state = {
-      currentDate: null, // { day, month, year, monthKey, yearCode, answer, isLeap }
-      dateFormat: 'extenso', // 'extenso' | 'numerico'
-      rangePreset: '2026-2027',
-      customStart: 2020,
-      customEnd: 2030,
-      startTime: 0,
-      timerRaf: null,
-      lockedError: false, // Bloqueia inputs numéricos enquanto exibe a correção do erro
-      stats: {
-        total: 0,
-        correct: 0,
-        streak: 0,
-        correctTimesMs: [],
-      },
-      history: [], // Últimas 8 tentativas
+      phase: 'idle', // idle | countdown | playing | transition | error | paused | summary
+      pausedFrom: null,
+      currentDate: null,
+      q: { start: 0, accum: 0 }, // tempo da pergunta atual
+      session: null, // { mode, start, consumedMs, attempts, streak, bestStreak, saved, range }
+      history: [],
+      countdownTimer: null,
+      transitionTimer: null,
     };
 
-    // Referências DOM
+    const $ = (id) => document.getElementById(id);
     const el = {
-      rangeSelect: document.getElementById('rangeSelect'),
-      customRangeBox: document.getElementById('customRangeBox'),
-      customStartYear: document.getElementById('customStartYear'),
-      customEndYear: document.getElementById('customEndYear'),
-      formatToggleBtn: document.getElementById('formatToggleBtn'),
-      refToggleBtn: document.getElementById('refToggleBtn'),
-      refChevron: document.getElementById('refChevron'),
-      referencePanel: document.getElementById('referencePanel'),
-      statAccuracy: document.getElementById('statAccuracy'),
-      statAvgTime: document.getElementById('statAvgTime'),
-      statStreak: document.getElementById('statStreak'),
-      resetStatsBtn: document.getElementById('resetStatsBtn'),
-      promptCard: document.getElementById('promptCard'),
-      liveTimer: document.getElementById('liveTimer'),
-      dateDisplay: document.getElementById('dateDisplay'),
-      idleHint: document.getElementById('idleHint'),
-      errorBox: document.getElementById('errorBox'),
-      errorFormula: document.getElementById('errorFormula'),
-      nextBtn: document.getElementById('nextBtn'),
-      keypadGrid: document.getElementById('keypadGrid'),
-      historyContainer: document.getElementById('historyContainer'),
-      historyList: document.getElementById('historyList'),
-      historyCountLabel: document.getElementById('historyCountLabel'),
+      rangeSelect: $('rangeSelect'),
+      customRangeBox: $('customRangeBox'),
+      customStartYear: $('customStartYear'),
+      customEndYear: $('customEndYear'),
+      formatToggleBtn: $('formatToggleBtn'),
+      refToggleBtn: $('refToggleBtn'),
+      refChevron: $('refChevron'),
+      referencePanel: $('referencePanel'),
+      statAccuracy: $('statAccuracy'),
+      statAvgTime: $('statAvgTime'),
+      statStreak: $('statStreak'),
+      progressBtn: $('progressBtn'),
+      promptCard: $('promptCard'),
+      cardTopBar: $('cardTopBar'),
+      sessionLabel: $('sessionLabel'),
+      liveTimer: $('liveTimer'),
+      pauseBtn: $('pauseBtn'),
+      screenStart: $('screenStart'),
+      screenPlay: $('screenPlay'),
+      screenPause: $('screenPause'),
+      screenSummary: $('screenSummary'),
+      modeGroup: $('modeGroup'),
+      countdownChk: $('countdownChk'),
+      startBtn: $('startBtn'),
+      startStats: $('startStats'),
+      dateDisplay: $('dateDisplay'),
+      idleHint: $('idleHint'),
+      errorBox: $('errorBox'),
+      errorFormula: $('errorFormula'),
+      nextBtn: $('nextBtn'),
+      nextBtnLabel: $('nextBtnLabel'),
+      resumeBtn: $('resumeBtn'),
+      endBtn: $('endBtn'),
+      summaryTitle: $('summaryTitle'),
+      summaryHeadline: $('summaryHeadline'),
+      summaryRecord: $('summaryRecord'),
+      summaryGrid: $('summaryGrid'),
+      summaryErrorsWrap: $('summaryErrorsWrap'),
+      summaryErrors: $('summaryErrors'),
+      againBtn: $('againBtn'),
+      changeModeBtn: $('changeModeBtn'),
+      keypadGrid: $('keypadGrid'),
+      historyContainer: $('historyContainer'),
+      historyList: $('historyList'),
+      historyCountLabel: $('historyCountLabel'),
+      progressModal: $('progressModal'),
+      progressBody: $('progressBody'),
+      progressCloseBtn: $('progressCloseBtn'),
+      exportBtn: $('exportBtn'),
+      importBtn: $('importBtn'),
+      importFile: $('importFile'),
+      clearBtn: $('clearBtn'),
+      toast: $('toast'),
     };
 
-    // Utilitários Matemáticos
+    // ---------- Matemática ----------
     function isLeapYear(year) {
       return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
     }
@@ -315,11 +528,17 @@
       return 31;
     }
 
-    function getYearCode(year) {
-      const centuryIndex = Math.floor(year / 100) % 4;
-      const centuryAdjust = [6, 4, 2, 0][centuryIndex];
+    function yearCodeParts(year) {
       const yy = year % 100;
-      return (yy + Math.floor(yy / 4) + centuryAdjust) % 7;
+      const quarter = Math.floor(yy / 4);
+      const century = Math.floor(year / 100) * 100;
+      const adjust = [6, 4, 2, 0][Math.floor(year / 100) % 4];
+      const sum = yy + quarter + adjust;
+      return { yy, quarter, century, adjust, sum, code: sum % 7 };
+    }
+
+    function getYearCode(year) {
+      return yearCodeParts(year).code;
     }
 
     function calculateDateDetails(day, month, year) {
@@ -328,45 +547,35 @@
       const monthKey = leap ? monthObj.leapKey : monthObj.key;
       const yearCode = getYearCode(year);
       const sum = day + monthKey + yearCode;
-      const answer = sum % 7;
-
-      return {
-        day,
-        month,
-        year,
-        isLeap: leap,
-        monthObj,
-        monthKey,
-        yearCode,
-        sum,
-        answer,
-      };
+      return { day, month, year, isLeap: leap, monthObj, monthKey, yearCode, sum, answer: sum % 7 };
     }
 
-    // Geração de Data Aleatória dentro do intervalo configurado
+    // ---------- Datas ----------
     function getActiveYearBounds() {
-      if (state.rangePreset === 'custom') {
-        let s = parseInt(el.customStartYear.value, 10) || 2000;
-        let e = parseInt(el.customEndYear.value, 10) || 2099;
+      const s0 = store.settings;
+      if (s0.rangePreset === 'custom') {
+        let s = parseInt(s0.customStart, 10) || 2000;
+        let e = parseInt(s0.customEnd, 10) || 2099;
         s = Math.max(1583, Math.min(9999, s));
         e = Math.max(1583, Math.min(9999, e));
         return s <= e ? [s, e] : [e, s];
       }
-      const [start, end] = state.rangePreset.split('-').map(Number);
-      return [start, end];
+      return s0.rangePreset.split('-').map(Number);
+    }
+
+    function rangeLabel() {
+      const [a, b] = getActiveYearBounds();
+      return `${a}–${b}`;
     }
 
     function generateRandomDate() {
       const [minYear, maxYear] = getActiveYearBounds();
       let candidate;
       let attempts = 0;
-
-      // Evita repetir exatamente a mesma data consecutivamente
       do {
         const year = Math.floor(Math.random() * (maxYear - minYear + 1)) + minYear;
         const month = Math.floor(Math.random() * 12) + 1;
-        const maxDay = getDaysInMonth(month, year);
-        const day = Math.floor(Math.random() * maxDay) + 1;
+        const day = Math.floor(Math.random() * getDaysInMonth(month, year)) + 1;
         candidate = calculateDateDetails(day, month, year);
         attempts++;
       } while (
@@ -376,315 +585,845 @@
         candidate.year === state.currentDate.year &&
         attempts < 10
       );
-
       return candidate;
     }
 
-    // Formatação da Data
-    function formatDateString(d, format = state.dateFormat) {
-      if (format === 'numerico') {
-        const dd = String(d.day).padStart(2, '0');
-        const mm = String(d.month).padStart(2, '0');
-        return `${dd}/${mm}/${d.year}`;
-      }
+    function formatDateString(d, format = store.settings.dateFormat) {
+      if (format === 'numerico') return formatShortDate(d);
       return `${d.day} de ${d.monthObj.name} de ${d.year}`;
     }
 
     function formatShortDate(d) {
-      const dd = String(d.day).padStart(2, '0');
-      const mm = String(d.month).padStart(2, '0');
-      return `${dd}/${mm}/${d.year}`;
+      return `${String(d.day).padStart(2, '0')}/${String(d.month).padStart(2, '0')}/${d.year}`;
     }
 
-    // Cronómetro
-    function startTimer() {
-      stopTimer();
-      state.startTime = performance.now();
-      function tick(now) {
-        const elapsedSec = (now - state.startTime) / 1000;
-        el.liveTimer.textContent = `${elapsedSec.toFixed(2)}s`;
-        state.timerRaf = requestAnimationFrame(tick);
+    // ---------- Utilitários ----------
+    function median(arr) {
+      if (!arr.length) return null;
+      const s = [...arr].sort((a, b) => a - b);
+      const m = Math.floor(s.length / 2);
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    }
+
+    function minOf(arr) {
+      return arr.length ? arr.reduce((a, b) => (b < a ? b : a), Infinity) : null;
+    }
+
+    function fmtSec(ms) {
+      return ms == null ? '—' : `${(ms / 1000).toFixed(2)}s`;
+    }
+
+    function fmtClock(ms) {
+      const totalSec = Math.max(0, Math.ceil(ms / 1000));
+      return `${Math.floor(totalSec / 60)}:${String(totalSec % 60).padStart(2, '0')}`;
+    }
+
+    function pct(n, total) {
+      return total ? `${Math.round((n / total) * 100)}%` : '—';
+    }
+
+    function dayKey(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function formatDayLabel(key) {
+      const [y, m, d] = key.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      const todayKey = dayKey(new Date());
+      const yest = new Date(); yest.setDate(yest.getDate() - 1);
+      if (key === todayKey) return 'Hoje';
+      if (key === dayKey(yest)) return 'Ontem';
+      const wd = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][date.getDay()];
+      return `${wd}, ${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
+    }
+
+    function computeDayStreak(keys) {
+      const d = new Date();
+      if (!keys.has(dayKey(d))) {
+        d.setDate(d.getDate() - 1);
+        if (!keys.has(dayKey(d))) return 0;
       }
-      state.timerRaf = requestAnimationFrame(tick);
-    }
-
-    function stopTimer() {
-      if (state.timerRaf) {
-        cancelAnimationFrame(state.timerRaf);
-        state.timerRaf = null;
+      let n = 0;
+      while (keys.has(dayKey(d))) {
+        n++;
+        d.setDate(d.getDate() - 1);
       }
+      return n;
     }
 
-    // Renderização dos 7 Botões Inferiores
+    let toastTimer = null;
+    function showToast(msg) {
+      el.toast.textContent = msg;
+      el.toast.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.toast.classList.add('hidden'), 2800);
+    }
+
+    // ---------- Explicação ----------
+    function buildBreakdownLines(d) {
+      const monthLabel = d.isLeap && (d.month === 1 || d.month === 2)
+        ? `${d.monthObj.short} bissexto`
+        : d.monthObj.short;
+      const lines = [
+        `${d.day} (dia) + ${d.monthKey} (${monthLabel}) + ${d.yearCode} (${d.year}) = ${d.sum} → ${d.sum} mod 7 = ${d.answer} (${DAYS[d.answer].full})`,
+      ];
+      if (d.year < MEMORIZED_YEARS[0] || d.year > MEMORIZED_YEARS[1]) {
+        const p = yearCodeParts(d.year);
+        lines.push(`Código de ${d.year}: ${p.yy} + ${p.quarter} (${p.yy}÷4) + ${p.adjust} (séc. ${p.century}) = ${p.sum} → ${p.sum} mod 7 = ${p.code}`);
+      }
+      return lines;
+    }
+
+    // ---------- Teclado de resposta ----------
+    const KEY_BASE = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl select-none';
+    const KEY_NORMAL = `${KEY_BASE} bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 focus:outline-none cursor-pointer`;
+    const NUM_NORMAL = 'font-mono text-lg sm:text-2xl font-bold text-zinc-100 leading-none mb-1';
+    const LBL_NORMAL = 'text-[11px] sm:text-xs font-medium text-zinc-400 uppercase tracking-wide';
+
     function renderKeypad() {
       el.keypadGrid.innerHTML = DAYS.map((d) => `
-        <button type="button" data-code="${d.code}"
-          class="key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 focus:outline-none select-none cursor-pointer">
-          <span class="font-mono text-lg sm:text-2xl font-bold text-zinc-100 leading-none mb-1">${d.code}</span>
-          <span class="text-[11px] sm:text-xs font-medium text-zinc-400 uppercase tracking-wide">${d.short}</span>
+        <button type="button" data-code="${d.code}" aria-label="${d.code} — ${d.full}" class="${KEY_NORMAL}">
+          <span class="${NUM_NORMAL}">${d.code}</span>
+          <span class="${LBL_NORMAL}">${d.short}</span>
         </button>
       `).join('');
-
       el.keypadGrid.querySelectorAll('button').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const code = Number(btn.dataset.code);
-          handleAnswer(code);
-        });
+        btn.addEventListener('click', () => handleAnswer(Number(btn.dataset.code)));
       });
     }
 
     function resetKeypadStyles() {
       el.keypadGrid.querySelectorAll('button').forEach((btn) => {
-        btn.className = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 focus:outline-none select-none cursor-pointer';
-        btn.querySelector('span:first-child').className = 'font-mono text-lg sm:text-2xl font-bold text-zinc-100 leading-none mb-1';
-        btn.querySelector('span:last-child').className = 'text-[11px] sm:text-xs font-medium text-zinc-400 uppercase tracking-wide';
+        btn.className = KEY_NORMAL;
+        btn.querySelector('span:first-child').className = NUM_NORMAL;
+        btn.querySelector('span:last-child').className = LBL_NORMAL;
       });
     }
 
     function highlightKeypadError(userChoice, correctAnswer) {
       el.keypadGrid.querySelectorAll('button').forEach((btn) => {
         const code = Number(btn.dataset.code);
+        const num = btn.querySelector('span:first-child');
+        const lbl = btn.querySelector('span:last-child');
         if (code === correctAnswer) {
-          btn.className = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-emerald-950/90 border-2 border-emerald-500 shadow-lg shadow-emerald-950/50 select-none';
-          btn.querySelector('span:first-child').className = 'font-mono text-lg sm:text-2xl font-bold text-emerald-300 leading-none mb-1';
-          btn.querySelector('span:last-child').className = 'text-[11px] sm:text-xs font-semibold text-emerald-400 uppercase tracking-wide';
+          btn.className = `${KEY_BASE} bg-emerald-950/90 border-2 border-emerald-500 shadow-lg shadow-emerald-950/50`;
+          num.className = 'font-mono text-lg sm:text-2xl font-bold text-emerald-300 leading-none mb-1';
+          lbl.className = 'text-[11px] sm:text-xs font-semibold text-emerald-400 uppercase tracking-wide';
         } else if (code === userChoice) {
-          btn.className = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-red-950/80 border-2 border-red-500/80 select-none';
-          btn.querySelector('span:first-child').className = 'font-mono text-lg sm:text-2xl font-bold text-red-300 leading-none mb-1';
-          btn.querySelector('span:last-child').className = 'text-[11px] sm:text-xs font-semibold text-red-400 uppercase tracking-wide';
+          btn.className = `${KEY_BASE} bg-red-950/80 border-2 border-red-500/80`;
+          num.className = 'font-mono text-lg sm:text-2xl font-bold text-red-300 leading-none mb-1';
+          lbl.className = 'text-[11px] sm:text-xs font-semibold text-red-400 uppercase tracking-wide';
         } else {
-          btn.className = 'key-btn flex flex-col items-center justify-center py-3 sm:py-4 px-1 rounded-xl bg-zinc-900/40 border border-zinc-800/50 opacity-45 select-none';
+          btn.className = `${KEY_BASE} bg-zinc-900/40 border border-zinc-800/50 opacity-45`;
         }
       });
     }
 
-    // Avançar para Nova Data
-    function loadNextDate() {
-      state.lockedError = false;
+    // ---------- Ecrãs ----------
+    function setPhase(phase) {
+      state.phase = phase;
+      const inPlay = ['countdown', 'playing', 'transition', 'error'].includes(phase);
+      el.screenStart.classList.toggle('hidden', phase !== 'idle');
+      el.screenPlay.classList.toggle('hidden', !inPlay);
+      el.screenPause.classList.toggle('hidden', phase !== 'paused');
+      el.screenSummary.classList.toggle('hidden', phase !== 'summary');
+      el.cardTopBar.classList.toggle('hidden', !(inPlay || phase === 'paused'));
+      el.pauseBtn.classList.toggle('invisible', !['playing', 'error'].includes(phase));
+
+      const keypadActive = ['playing', 'transition', 'error'].includes(phase);
+      el.keypadGrid.classList.toggle('opacity-30', !keypadActive);
+      el.keypadGrid.classList.toggle('pointer-events-none', !keypadActive);
+
+      updateSessionLabel();
+    }
+
+    function updateSessionLabel(consumedNow) {
+      const s = state.session;
+      if (!s) { el.sessionLabel.textContent = ''; return; }
+      const mode = MODES[s.mode];
+      const n = s.attempts.length;
+      if (mode.limitMs) {
+        const consumed = consumedNow ?? s.consumedMs;
+        el.sessionLabel.textContent = `⏱ ${fmtClock(mode.limitMs - consumed)}`;
+      } else if (mode.count) {
+        el.sessionLabel.textContent = `${Math.min(n + (state.phase === 'playing' ? 1 : 0), mode.count)}/${mode.count}`;
+      } else {
+        el.sessionLabel.textContent = `Livre · ${n}`;
+      }
+    }
+
+    function renderModeButtons() {
+      el.modeGroup.innerHTML = Object.entries(MODES).map(([key, m]) => {
+        const active = store.settings.mode === key;
+        const cls = active
+          ? 'border-emerald-500 bg-emerald-950/40 text-emerald-200'
+          : 'border-zinc-800 bg-zinc-950/40 text-zinc-300 hover:border-zinc-700';
+        return `
+          <button type="button" role="radio" aria-checked="${active}" data-mode="${key}"
+            class="rounded-xl border ${cls} px-2 py-3 transition-colors">
+            <div class="text-sm sm:text-base font-semibold">${m.label}</div>
+            <div class="text-[11px] sm:text-xs text-zinc-500 mt-0.5">${m.desc}</div>
+          </button>`;
+      }).join('');
+      el.modeGroup.querySelectorAll('button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          store.settings.mode = btn.dataset.mode;
+          saveStore();
+          renderModeButtons();
+        });
+      });
+    }
+
+    function renderStartStats() {
+      const today = dayKey(new Date());
+      const keys = new Set();
+      let n = 0, ok = 0;
+      for (const a of store.attempts) {
+        const k = dayKey(new Date(a.t));
+        keys.add(k);
+        if (k === today) { n++; if (a.ok) ok++; }
+      }
+      const streak = computeDayStreak(keys);
+      let txt = n ? `Hoje: ${n} ${n === 1 ? 'data' : 'datas'} · ${pct(ok, n)} certas` : 'Ainda não treinaste hoje.';
+      if (streak >= 2) txt += ` · ${streak} dias seguidos`;
+      el.startStats.textContent = txt;
+    }
+
+    // ---------- Fluxo da sessão ----------
+    function clearTimers() {
+      clearTimeout(state.countdownTimer);
+      clearTimeout(state.transitionTimer);
+      state.countdownTimer = null;
+      state.transitionTimer = null;
+    }
+
+    function startSession() {
+      if (!['idle', 'summary'].includes(state.phase)) return;
+      clearTimers();
+      state.session = {
+        mode: store.settings.mode,
+        start: Date.now(),
+        consumedMs: 0,
+        attempts: [],
+        streak: 0,
+        bestStreak: 0,
+        saved: false,
+        range: rangeLabel(),
+      };
+      state.history = [];
+      state.currentDate = null;
+      renderHistory();
+      updateStatsUI();
+      if (store.settings.countdown) runCountdown();
+      else nextQuestion();
+    }
+
+    function runCountdown() {
+      setPhase('countdown');
+      el.errorBox.classList.add('hidden');
+      el.idleHint.classList.add('hidden');
+      el.liveTimer.textContent = '0.00s';
+      resetKeypadStyles();
+      let n = 3;
+      const step = () => {
+        if (state.phase !== 'countdown') return;
+        if (n === 0) { nextQuestion(); return; }
+        el.dateDisplay.textContent = String(n);
+        el.dateDisplay.classList.add('text-emerald-400', 'font-mono');
+        el.dateDisplay.classList.remove('animate-pop');
+        void el.dateDisplay.offsetWidth;
+        el.dateDisplay.classList.add('animate-pop');
+        n--;
+        state.countdownTimer = setTimeout(step, 650);
+      };
+      step();
+    }
+
+    function nextQuestion() {
+      clearTimers();
       state.currentDate = generateRandomDate();
+      el.dateDisplay.classList.remove('text-emerald-400', 'font-mono', 'animate-pop');
       el.dateDisplay.textContent = formatDateString(state.currentDate);
       el.errorBox.classList.add('hidden');
       el.idleHint.classList.remove('hidden');
       resetKeypadStyles();
-      startTimer();
+      state.q = { start: performance.now(), accum: 0 };
+      setPhase('playing');
     }
 
-    // Construção da Explicação Matemática
-    function buildBreakdownText(d) {
-      const monthLabel = d.isLeap && (d.month === 1 || d.month === 2)
-        ? `${d.monthObj.short} bissexto`
-        : d.monthObj.short;
-      const dayName = DAYS[d.answer].full;
-      return `${d.day} (dia) + ${d.monthKey} (${monthLabel}) + ${d.yearCode} (${d.year}) = ${d.sum} → ${d.sum} mod 7 = ${d.answer} (${dayName})`;
+    function sessionShouldEnd() {
+      const s = state.session;
+      const mode = MODES[s.mode];
+      if (mode.count) return s.attempts.length >= mode.count;
+      if (mode.limitMs) return s.consumedMs >= mode.limitMs;
+      return false;
     }
 
-    // Processar Resposta do Utilizador
-    function handleAnswer(selectedCode) {
-      if (state.lockedError || !state.currentDate) return;
+    function handleAnswer(code) {
+      if (state.phase !== 'playing' || !state.currentDate || !state.session) return;
 
-      const elapsedMs = performance.now() - state.startTime;
+      const now = performance.now();
+      const delta = now - state.q.start;
+      state.q.accum += delta;
+      state.session.consumedMs += delta;
+
+      const mode = MODES[state.session.mode];
+      if (mode.limitMs && state.session.consumedMs >= mode.limitMs) {
+        // A resposta chegou depois de o tempo acabar: não conta.
+        state.session.consumedMs = mode.limitMs;
+        endSession();
+        return;
+      }
+
       const d = state.currentDate;
-      const isCorrect = selectedCode === d.answer;
+      const ok = code === d.answer;
+      recordAttempt(d, code, ok, state.q.accum);
 
-      state.stats.total += 1;
-
-      if (isCorrect) {
-        state.stats.correct += 1;
-        state.stats.streak += 1;
-        state.stats.correctTimesMs.push(elapsedMs);
-
-        // Registar no histórico
-        addHistoryItem(d, elapsedMs, true, selectedCode);
-        updateStatsUI();
-
-        // Feedback visual verde rápido (250ms) e avanço imediato
+      if (ok) {
+        setPhase('transition');
         el.promptCard.classList.remove('animate-success');
-        void el.promptCard.offsetWidth; // Reflow para reiniciar animação
+        void el.promptCard.offsetWidth;
         el.promptCard.classList.add('animate-success');
+        const btn = el.keypadGrid.querySelector(`button[data-code="${code}"]`);
+        if (btn) btn.classList.add('!bg-emerald-600/30', '!border-emerald-500');
 
-        const btn = el.keypadGrid.querySelector(`button[data-code="${selectedCode}"]`);
-        if (btn) {
-          btn.classList.add('!bg-emerald-600/30', '!border-emerald-500');
-        }
-
-        stopTimer();
-        setTimeout(() => {
-          loadNextDate();
-        }, 250);
+        state.transitionTimer = setTimeout(() => {
+          if (state.phase !== 'transition') return;
+          if (sessionShouldEnd()) endSession();
+          else nextQuestion();
+        }, TRANSITION_MS);
       } else {
-        stopTimer();
-        state.lockedError = true;
-        state.stats.streak = 0;
-
-        addHistoryItem(d, elapsedMs, false, selectedCode);
-        updateStatsUI();
-
-        highlightKeypadError(selectedCode, d.answer);
+        setPhase('error');
+        highlightKeypadError(code, d.answer);
         el.idleHint.classList.add('hidden');
-        el.errorFormula.textContent = buildBreakdownText(d);
+        el.errorFormula.replaceChildren(...buildBreakdownLines(d).map((line, i) => {
+          const div = document.createElement('div');
+          div.textContent = line;
+          if (i > 0) div.className = 'text-red-300/80 text-[11px] sm:text-xs';
+          return div;
+        }));
+        el.nextBtnLabel.textContent = sessionShouldEnd() ? 'Ver resumo' : 'Próxima';
         el.errorBox.classList.remove('hidden');
       }
     }
 
-    // Atualizar Estatísticas
+    function advance() {
+      if (state.phase !== 'error') return;
+      if (sessionShouldEnd()) endSession();
+      else nextQuestion();
+    }
+
+    function recordAttempt(d, userChoice, ok, ms) {
+      const s = state.session;
+      const item = { details: d, userChoice, ok, ms };
+      s.attempts.push(item);
+      if (ok) {
+        s.streak++;
+        s.bestStreak = Math.max(s.bestStreak, s.streak);
+      } else {
+        s.streak = 0;
+      }
+
+      state.history.unshift(item);
+      if (state.history.length > 8) state.history.pop();
+
+      store.attempts.push({
+        t: Date.now(), d: d.day, m: d.month, y: d.year, a: d.answer, u: userChoice,
+        ok, ms: Math.round(ms), mode: s.mode,
+      });
+      saveStore();
+
+      updateStatsUI();
+      renderHistory();
+      updateSessionLabel();
+    }
+
+    function pause() {
+      if (!['playing', 'error', 'countdown'].includes(state.phase)) return;
+      if (state.phase === 'playing') {
+        const delta = performance.now() - state.q.start;
+        state.q.accum += delta;
+        state.session.consumedMs += delta;
+      }
+      clearTimeout(state.countdownTimer);
+      state.pausedFrom = state.phase;
+      setPhase('paused');
+    }
+
+    function resume() {
+      if (state.phase !== 'paused') return;
+      const from = state.pausedFrom;
+      state.pausedFrom = null;
+      if (from === 'playing') {
+        state.q.start = performance.now();
+        setPhase('playing');
+      } else if (from === 'error') {
+        setPhase('error');
+      } else {
+        runCountdown();
+      }
+    }
+
+    function saveSessionRecord() {
+      const s = state.session;
+      if (!s || s.saved || s.attempts.length === 0) return null;
+      const times = s.attempts.filter((a) => a.ok).map((a) => a.ms);
+      const record = {
+        start: s.start,
+        end: Date.now(),
+        mode: s.mode,
+        total: s.attempts.length,
+        correct: times.length,
+        medianMs: times.length ? Math.round(median(times)) : null,
+        bestMs: times.length ? Math.round(minOf(times)) : null,
+        bestStreak: s.bestStreak,
+        range: s.range,
+      };
+      store.sessions.push(record);
+      s.saved = true;
+      saveStore();
+      return record;
+    }
+
+    function findRecords(record) {
+      const msgs = [];
+      const prevSessions = store.sessions.filter((x) => x !== record && x.mode === record.mode);
+      if (record.mode === 'tempo' && record.correct > 0) {
+        const prevBest = prevSessions.reduce((m, x) => Math.max(m, x.correct), 0);
+        if (prevSessions.length && record.correct > prevBest) msgs.push(`Novo recorde: ${record.correct} certas em 2 minutos!`);
+      }
+      if (record.mode === 'serie' && record.total >= MODES.serie.count && record.medianMs != null) {
+        const better = (a, b) => a.correct > b.correct || (a.correct === b.correct && a.medianMs < b.medianMs);
+        const complete = prevSessions.filter((x) => x.total >= MODES.serie.count && x.medianMs != null);
+        if (complete.length && complete.every((x) => better(record, x))) msgs.push('A tua melhor série de 20 até agora!');
+      }
+      if (record.bestMs != null) {
+        const prevTimes = store.attempts.filter((a) => a.ok && a.t < record.start).map((a) => a.ms);
+        if (prevTimes.length && record.bestMs < minOf(prevTimes)) msgs.push(`Novo melhor tempo: ${fmtSec(record.bestMs)}`);
+      }
+      return msgs;
+    }
+
+    function endSession() {
+      clearTimers();
+      const s = state.session;
+      if (!s || s.attempts.length === 0) {
+        goIdle();
+        return;
+      }
+      const record = saveSessionRecord() || store.sessions[store.sessions.length - 1];
+      renderSummary(record);
+      setPhase('summary');
+    }
+
+    function goIdle() {
+      clearTimers();
+      saveSessionRecord();
+      state.pausedFrom = null;
+      renderModeButtons();
+      renderStartStats();
+      setPhase('idle');
+    }
+
+    function renderSummary(record) {
+      const s = state.session;
+      const mode = MODES[s.mode];
+      const total = s.attempts.length;
+      const correct = s.attempts.filter((a) => a.ok).length;
+      const times = s.attempts.filter((a) => a.ok).map((a) => a.ms);
+
+      el.summaryTitle.textContent = `Sessão terminada · ${mode.label}`;
+      el.summaryHeadline.textContent = mode.limitMs ? `${correct} certas` : `${correct}/${total}`;
+
+      const cells = [
+        ['Precisão', pct(correct, total)],
+        ['Mediana', fmtSec(median(times))],
+        ['Melhor tempo', fmtSec(minOf(times))],
+        ['Maior série', String(s.bestStreak)],
+      ];
+      el.summaryGrid.innerHTML = cells.map(([k, v]) => `
+        <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg px-3 py-2">
+          <div class="text-[10px] uppercase tracking-wider text-zinc-500">${k}</div>
+          <div class="font-mono font-semibold text-zinc-100 mt-0.5">${v}</div>
+        </div>`).join('');
+
+      const msgs = record ? findRecords(record) : [];
+      el.summaryRecord.textContent = msgs.join(' · ');
+      el.summaryRecord.classList.toggle('hidden', msgs.length === 0);
+
+      const errors = s.attempts.filter((a) => !a.ok);
+      el.summaryErrorsWrap.classList.toggle('hidden', errors.length === 0);
+      el.summaryErrors.replaceChildren(...errors.map((a) => {
+        const div = document.createElement('div');
+        div.className = 'bg-red-950/25 border border-red-500/30 rounded-lg px-3 py-2 font-mono text-[11px] sm:text-xs text-red-200';
+        const head = document.createElement('div');
+        head.className = 'text-zinc-300 mb-0.5';
+        head.textContent = `${formatShortDate(a.details)} · respondeste ${a.userChoice} (${DAYS[a.userChoice].short})`;
+        div.appendChild(head);
+        for (const line of buildBreakdownLines(a.details)) {
+          const l = document.createElement('div');
+          l.textContent = line;
+          div.appendChild(l);
+        }
+        return div;
+      }));
+    }
+
+    // ---------- Estatísticas e histórico ----------
     function updateStatsUI() {
-      const { total, correct, streak, correctTimesMs } = state.stats;
-      if (total === 0) {
+      const s = state.session;
+      if (!s || s.attempts.length === 0) {
         el.statAccuracy.textContent = '—';
         el.statAvgTime.textContent = '—';
         el.statStreak.textContent = '0';
         return;
       }
-
-      const acc = Math.round((correct / total) * 100);
-      el.statAccuracy.textContent = `${acc}%`;
-      el.statStreak.textContent = String(streak);
-
-      if (correctTimesMs.length > 0) {
-        const avgMs = correctTimesMs.reduce((a, b) => a + b, 0) / correctTimesMs.length;
-        el.statAvgTime.textContent = `${(avgMs / 1000).toFixed(2)}s`;
-      } else {
-        el.statAvgTime.textContent = '—';
-      }
-    }
-
-    // Histórico das Últimas 8 Tentativas
-    function addHistoryItem(dateDetails, elapsedMs, isCorrect, userChoice) {
-      state.history.unshift({
-        dateDetails,
-        elapsedMs,
-        isCorrect,
-        userChoice,
-      });
-      if (state.history.length > 8) {
-        state.history.pop();
-      }
-      renderHistory();
+      const total = s.attempts.length;
+      const times = s.attempts.filter((a) => a.ok).map((a) => a.ms);
+      el.statAccuracy.textContent = pct(times.length, total);
+      el.statAvgTime.textContent = fmtSec(median(times));
+      el.statStreak.textContent = String(s.streak);
     }
 
     function renderHistory() {
       if (state.history.length === 0) {
         el.historyContainer.classList.add('hidden');
+        el.historyList.innerHTML = '';
         return;
       }
-
+      const s = state.session;
+      const correct = s ? s.attempts.filter((a) => a.ok).length : 0;
       el.historyContainer.classList.remove('hidden');
-      el.historyCountLabel.textContent = `${state.stats.correct}/${state.stats.total} certas`;
+      el.historyCountLabel.textContent = `${correct}/${s ? s.attempts.length : 0} certas`;
 
       el.historyList.innerHTML = state.history.map((item) => {
-        const d = item.dateDetails;
-        const sec = (item.elapsedMs / 1000).toFixed(2);
-        const formula = buildBreakdownText(d);
-        const borderClass = item.isCorrect
-          ? 'border-zinc-800/90 bg-zinc-900/60'
-          : 'border-red-500/40 bg-red-950/25';
-        const badgeClass = item.isCorrect
-          ? 'text-emerald-400'
-          : 'text-red-400';
-        const statusSymbol = item.isCorrect
+        const d = item.details;
+        const borderClass = item.ok ? 'border-zinc-800/90 bg-zinc-900/60' : 'border-red-500/40 bg-red-950/25';
+        const badgeClass = item.ok ? 'text-emerald-400' : 'text-red-400';
+        const statusSymbol = item.ok
           ? `✓ ${DAYS[d.answer].short}`
           : `✗ ${DAYS[item.userChoice].short} (${DAYS[d.answer].short})`;
-
         return `
-          <div title="${formula}"
+          <div title="${buildBreakdownLines(d).join('\n')}"
             class="rounded-lg border ${borderClass} px-2.5 py-2 flex flex-col justify-between text-xs cursor-help transition-colors hover:border-zinc-700">
             <div class="flex items-center justify-between gap-1 font-mono">
               <span class="text-zinc-300 font-medium">${formatShortDate(d)}</span>
-              <span class="text-zinc-500 text-[11px]">${sec}s</span>
+              <span class="text-zinc-500 text-[11px]">${fmtSec(item.ms)}</span>
             </div>
-            <div class="mt-1 font-mono text-[11px] font-semibold ${badgeClass}">
-              ${statusSymbol}
-            </div>
-          </div>
-        `;
+            <div class="mt-1 font-mono text-[11px] font-semibold ${badgeClass}">${statusSymbol}</div>
+          </div>`;
       }).join('');
     }
 
-    // Eventos de Teclado (Zero Atrito)
+    // ---------- Progresso guardado ----------
+    function renderProgress() {
+      const A = store.attempts;
+      if (!A.length) {
+        el.progressBody.innerHTML = `
+          <p class="text-zinc-400">Ainda não há progresso guardado.</p>
+          <p class="text-zinc-500 text-xs mt-1">Cada resposta fica registada automaticamente neste browser.</p>`;
+        return;
+      }
+
+      const okTimes = [];
+      let correct = 0, run = 0, bestRun = 0;
+      const byDay = new Map();
+      for (const a of A) {
+        if (a.ok) { correct++; okTimes.push(a.ms); run++; bestRun = Math.max(bestRun, run); } else { run = 0; }
+        const k = dayKey(new Date(a.t));
+        if (!byDay.has(k)) byDay.set(k, { n: 0, ok: 0, times: [] });
+        const day = byDay.get(k);
+        day.n++;
+        if (a.ok) { day.ok++; day.times.push(a.ms); }
+      }
+      const dayStreak = computeDayStreak(new Set(byDay.keys()));
+
+      const tempoBest = store.sessions.filter((s) => s.mode === 'tempo')
+        .reduce((m, s) => (m == null || s.correct > m.correct ? s : m), null);
+      const serieBest = store.sessions
+        .filter((s) => s.mode === 'serie' && s.total >= MODES.serie.count && s.medianMs != null)
+        .reduce((m, s) => (m == null || s.correct > m.correct || (s.correct === m.correct && s.medianMs < m.medianMs) ? s : m), null);
+
+      const tile = (label, value, hint = '') => `
+        <div class="bg-zinc-950/60 border border-zinc-800 rounded-lg px-3 py-2">
+          <div class="text-[10px] uppercase tracking-wider text-zinc-500">${label}</div>
+          <div class="font-mono font-semibold text-zinc-100 mt-0.5">${value}</div>
+          ${hint ? `<div class="text-[10px] text-zinc-500 mt-0.5">${hint}</div>` : ''}
+        </div>`;
+
+      const days = [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1)).slice(0, 14);
+      const rows = days.map(([k, v]) => `
+        <tr class="border-t border-zinc-800/70">
+          <td class="py-1.5 pr-2 text-zinc-300">${formatDayLabel(k)}</td>
+          <td class="py-1.5 px-2 text-right font-mono text-zinc-300">${v.n}</td>
+          <td class="py-1.5 px-2 text-right font-mono text-zinc-300">${pct(v.ok, v.n)}</td>
+          <td class="py-1.5 pl-2 text-right font-mono text-zinc-300">${fmtSec(median(v.times))}</td>
+        </tr>`).join('');
+
+      el.progressBody.innerHTML = `
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          ${tile('Datas treinadas', A.length.toLocaleString('pt-PT'))}
+          ${tile('Precisão', pct(correct, A.length))}
+          ${tile('Mediana', fmtSec(median(okTimes)))}
+          ${tile('Dias seguidos', String(dayStreak), `${byDay.size} ${byDay.size === 1 ? 'dia' : 'dias'} no total`)}
+        </div>
+
+        <div class="text-[11px] uppercase tracking-wider text-zinc-500 mt-5 mb-2">Recordes</div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          ${tile('Melhor tempo', fmtSec(minOf(okTimes)))}
+          ${tile('Maior série', String(bestRun), 'acertos seguidos')}
+          ${tile('2 minutos', tempoBest ? `${tempoBest.correct} certas` : '—')}
+          ${tile('Série de 20', serieBest ? `${serieBest.correct}/${serieBest.total}` : '—', serieBest ? `mediana ${fmtSec(serieBest.medianMs)}` : '')}
+        </div>
+
+        <div class="text-[11px] uppercase tracking-wider text-zinc-500 mt-5 mb-1">Últimos dias</div>
+        <table class="w-full text-xs sm:text-sm">
+          <thead>
+            <tr class="text-zinc-500 text-[11px]">
+              <th class="text-left font-medium py-1 pr-2">Dia</th>
+              <th class="text-right font-medium py-1 px-2">Datas</th>
+              <th class="text-right font-medium py-1 px-2">Precisão</th>
+              <th class="text-right font-medium py-1 pl-2">Mediana</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    function openProgress() {
+      if (state.phase === 'playing' || state.phase === 'countdown') pause();
+      renderProgress();
+      el.progressModal.classList.remove('hidden');
+      el.progressCloseBtn.focus();
+    }
+
+    function closeProgress() {
+      el.progressModal.classList.add('hidden');
+      el.progressBtn.blur();
+    }
+
+    function exportData() {
+      const payload = { app: 'chave-dos-meses', exportedAt: new Date().toISOString(), ...store };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `chave-dos-meses-progresso-${dayKey(new Date())}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function importData(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const p = JSON.parse(reader.result);
+          const atts = (Array.isArray(p.attempts) ? p.attempts : []).filter(isValidAttempt).map(cleanAttempt);
+          const sess = (Array.isArray(p.sessions) ? p.sessions : []).filter(isValidSession).map(cleanSession);
+          if (!atts.length && !sess.length) throw new Error('vazio');
+
+          const keyA = (a) => `${a.t}|${a.d}|${a.m}|${a.y}|${a.u}`;
+          const seenA = new Set(store.attempts.map(keyA));
+          let added = 0;
+          for (const a of atts) {
+            if (!seenA.has(keyA(a))) { store.attempts.push(a); seenA.add(keyA(a)); added++; }
+          }
+          const keyS = (s) => `${s.start}|${s.mode}`;
+          const seenS = new Set(store.sessions.map(keyS));
+          for (const s of sess) {
+            if (!seenS.has(keyS(s))) { store.sessions.push(s); seenS.add(keyS(s)); }
+          }
+          store.attempts.sort((a, b) => a.t - b.t);
+          store.sessions.sort((a, b) => a.start - b.start);
+          saveStore();
+          renderProgress();
+          renderStartStats();
+          showToast(added ? `Importadas ${added} tentativas novas.` : 'Nada de novo para importar.');
+        } catch (e) {
+          showToast('Ficheiro inválido.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearAll() {
+      if (!confirm('Apagar todo o progresso guardado neste browser? Esta ação não pode ser desfeita.')) return;
+      store.attempts = [];
+      store.sessions = [];
+      saveStore();
+      renderProgress();
+      renderStartStats();
+      showToast('Progresso apagado.');
+    }
+
+    // ---------- Ciclo de animação (cronómetros) ----------
+    function frame(now) {
+      if (state.session && state.phase === 'playing') {
+        const running = now - state.q.start;
+        el.liveTimer.textContent = fmtSec(state.q.accum + running);
+        const mode = MODES[state.session.mode];
+        if (mode.limitMs) {
+          const consumed = state.session.consumedMs + running;
+          if (consumed >= mode.limitMs) {
+            state.session.consumedMs = mode.limitMs;
+            endSession();
+          } else {
+            updateSessionLabel(consumed);
+          }
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // ---------- Definições ----------
+    function applySettingsToUI() {
+      const s = store.settings;
+      el.rangeSelect.value = s.rangePreset;
+      el.customStartYear.value = s.customStart;
+      el.customEndYear.value = s.customEnd;
+      const custom = s.rangePreset === 'custom';
+      el.customRangeBox.classList.toggle('hidden', !custom);
+      el.customRangeBox.classList.toggle('flex', custom);
+      el.formatToggleBtn.textContent = s.dateFormat === 'extenso' ? 'Extenso' : 'DD/MM/AAAA';
+      el.referencePanel.classList.toggle('hidden', !s.refOpen);
+      el.refToggleBtn.setAttribute('aria-expanded', String(s.refOpen));
+      el.refChevron.classList.toggle('rotate-180', s.refOpen);
+      el.countdownChk.checked = !!s.countdown;
+    }
+
+    // ---------- Eventos ----------
     document.addEventListener('keydown', (e) => {
-      // Ignora atalhos se o utilizador estiver a editar os inputs de ano personalizado
-      if (document.activeElement === el.customStartYear || document.activeElement === el.customEndYear) {
-        if (e.key === 'Enter') {
-          document.activeElement.blur();
-          loadNextDate();
-        }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (!el.progressModal.classList.contains('hidden')) {
+        if (e.key === 'Escape') closeProgress();
         return;
       }
 
-      if (state.lockedError) {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          loadNextDate();
-        }
+      const ae = document.activeElement;
+      const tag = ae ? ae.tagName : '';
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
+        if (e.key === 'Enter' && tag === 'INPUT') ae.blur();
+        if (e.key === 'Escape') ae.blur();
         return;
       }
+      if (e.repeat) return;
 
-      // Aceita teclas 0 a 6 tanto da fila superior como do Numpad
-      if (/^[0-6]$/.test(e.key)) {
-        e.preventDefault();
-        handleAnswer(Number(e.key));
+      const isGo = e.key === ' ' || e.key === 'Enter';
+      // Com um botão focado pelo teclado (Tab), Espaço/Enter ativam esse botão normalmente.
+      if (isGo && tag === 'BUTTON' && !ae.closest('#keypadGrid')) return;
+
+      switch (state.phase) {
+        case 'idle':
+          if (isGo) { e.preventDefault(); startSession(); }
+          break;
+        case 'countdown':
+          if (isGo) e.preventDefault();
+          if (e.key === 'Escape') goIdle();
+          break;
+        case 'playing':
+          if (/^[0-6]$/.test(e.key)) { e.preventDefault(); handleAnswer(Number(e.key)); }
+          else if (e.key === 'Escape') pause();
+          else if (isGo) e.preventDefault();
+          break;
+        case 'transition':
+          if (isGo) e.preventDefault();
+          break;
+        case 'error':
+          if (isGo) { e.preventDefault(); advance(); }
+          else if (e.key === 'Escape') pause();
+          break;
+        case 'paused':
+          if (isGo || e.key === 'Escape') { e.preventDefault(); resume(); }
+          break;
+        case 'summary':
+          if (isGo) { e.preventDefault(); startSession(); }
+          else if (e.key === 'Escape') goIdle();
+          break;
       }
     });
 
-    // Eventos dos Controlos Superiores
+    // Depois de um clique com rato/toque, larga o foco do botão para Espaço/Enter não o "clicarem" de novo.
+    document.addEventListener('pointerup', (e) => {
+      const btn = e.target.closest && e.target.closest('button');
+      if (btn) setTimeout(() => btn.blur(), 0);
+    });
+
+    // Sair do separador pausa o cronómetro.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && ['playing', 'countdown'].includes(state.phase)) pause();
+    });
+
+    window.addEventListener('pagehide', () => saveSessionRecord());
+
     el.rangeSelect.addEventListener('change', (e) => {
-      state.rangePreset = e.target.value;
-      if (state.rangePreset === 'custom') {
-        el.customRangeBox.classList.remove('hidden');
-        el.customRangeBox.classList.add('flex');
-      } else {
-        el.customRangeBox.classList.add('hidden');
-        el.customRangeBox.classList.remove('flex');
-      }
-      loadNextDate();
+      store.settings.rangePreset = e.target.value;
+      saveStore();
+      applySettingsToUI();
+      if (store.settings.rangePreset === 'custom') el.customStartYear.focus();
+      else el.rangeSelect.blur();
     });
 
-    el.customStartYear.addEventListener('change', () => loadNextDate());
-    el.customEndYear.addEventListener('change', () => loadNextDate());
+    const onCustomYear = () => {
+      store.settings.customStart = parseInt(el.customStartYear.value, 10) || 2000;
+      store.settings.customEnd = parseInt(el.customEndYear.value, 10) || 2099;
+      saveStore();
+    };
+    el.customStartYear.addEventListener('change', onCustomYear);
+    el.customEndYear.addEventListener('change', onCustomYear);
 
     el.formatToggleBtn.addEventListener('click', () => {
-      state.dateFormat = state.dateFormat === 'extenso' ? 'numerico' : 'extenso';
-      el.formatToggleBtn.textContent = state.dateFormat === 'extenso' ? 'Extenso' : 'DD/MM/AAAA';
-      if (state.currentDate) {
+      store.settings.dateFormat = store.settings.dateFormat === 'extenso' ? 'numerico' : 'extenso';
+      saveStore();
+      applySettingsToUI();
+      if (state.currentDate && state.phase !== 'countdown') {
         el.dateDisplay.textContent = formatDateString(state.currentDate);
       }
     });
 
     el.refToggleBtn.addEventListener('click', () => {
-      const isHidden = el.referencePanel.classList.contains('hidden');
-      if (isHidden) {
-        el.referencePanel.classList.remove('hidden');
-        el.refToggleBtn.setAttribute('aria-expanded', 'true');
-        el.refChevron.classList.add('rotate-180');
-      } else {
-        el.referencePanel.classList.add('hidden');
-        el.refToggleBtn.setAttribute('aria-expanded', 'false');
-        el.refChevron.classList.remove('rotate-180');
-      }
+      store.settings.refOpen = !store.settings.refOpen;
+      saveStore();
+      applySettingsToUI();
     });
 
-    el.nextBtn.addEventListener('click', () => {
-      loadNextDate();
+    el.countdownChk.addEventListener('change', () => {
+      store.settings.countdown = el.countdownChk.checked;
+      saveStore();
+      el.countdownChk.blur();
     });
 
-    el.resetStatsBtn.addEventListener('click', () => {
-      state.stats = {
-        total: 0,
-        correct: 0,
-        streak: 0,
-        correctTimesMs: [],
-      };
-      state.history = [];
-      updateStatsUI();
-      renderHistory();
-      loadNextDate();
-    });
+    el.startBtn.addEventListener('click', startSession);
+    el.nextBtn.addEventListener('click', advance);
+    el.pauseBtn.addEventListener('click', pause);
+    el.resumeBtn.addEventListener('click', resume);
+    el.endBtn.addEventListener('click', endSession);
+    el.againBtn.addEventListener('click', startSession);
+    el.changeModeBtn.addEventListener('click', goIdle);
 
-    // Inicialização
+    el.progressBtn.addEventListener('click', openProgress);
+    el.progressCloseBtn.addEventListener('click', closeProgress);
+    el.progressModal.addEventListener('click', (e) => { if (e.target === el.progressModal) closeProgress(); });
+    el.exportBtn.addEventListener('click', exportData);
+    el.importBtn.addEventListener('click', () => el.importFile.click());
+    el.importFile.addEventListener('change', () => {
+      const f = el.importFile.files && el.importFile.files[0];
+      if (f) importData(f);
+      el.importFile.value = '';
+    });
+    el.clearBtn.addEventListener('click', clearAll);
+
+    // ---------- Inicialização ----------
     window.addEventListener('DOMContentLoaded', () => {
       renderKeypad();
+      applySettingsToUI();
+      renderModeButtons();
+      renderStartStats();
       updateStatsUI();
-      loadNextDate();
+      setPhase('idle');
+      requestAnimationFrame(frame);
     });
   </script>
 </body>
